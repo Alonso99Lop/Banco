@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Banco Ficticio Demo - Práctica Ciberseguridad</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+  body {
+    background: linear-gradient(135deg, #0d3b66, #1b5e20);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 30px 25px;
+    width: 100%;
+    max-width: 380px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  }
+  .banner {
+    background: #d32f2f;
+    color: #fff;
+    font-size: 12px;
+    text-align: center;
+    padding: 6px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    font-weight: bold;
+  }
+  .logo {
+    text-align: center;
+    font-size: 22px;
+    font-weight: bold;
+    color: #0d3b66;
+    margin-bottom: 5px;
+  }
+  .subtitle {
+    text-align: center;
+    color: #666;
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+  input {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+  button {
+    width: 100%;
+    padding: 12px;
+    background: #0d3b66;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 15px;
+    cursor: pointer;
+    margin-bottom: 10px;
+  }
+  button:hover { background: #0a2e50; }
+  .switch {
+    text-align: center;
+    font-size: 13px;
+    color: #0d3b66;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  .msg {
+    text-align: center;
+    font-size: 13px;
+    margin-bottom: 10px;
+    min-height: 18px;
+  }
+  .msg.error { color: #d32f2f; }
+  .msg.ok { color: #2e7d32; }
+  .hidden { display: none; }
+  .table-wrap { margin-top: 15px; max-height: 150px; overflow-y: auto; border-top: 1px solid #eee; padding-top: 10px; }
+  table { width: 100%; font-size: 12px; }
+  th, td { border-bottom: 1px solid #eee; padding: 4px; text-align: left; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="banner">⚠ SIMULACIÓN EDUCATIVA — Marca y datos ficticios, no es un banco real</div>
+  <div class="logo">🏦 BancoDemo</div>
+  <div class="subtitle">Práctica de ciberseguridad — sin base de datos</div>
+
+  <div id="msg" class="msg"></div>
+
+  <!-- FORM LOGIN -->
+  <div id="loginForm">
+    <input type="text" id="loginUser" placeholder="Usuario">
+    <input type="password" id="loginPass" placeholder="Contraseña">
+    <button onclick="login()">Iniciar sesión</button>
+    <div class="switch" onclick="toggleForm('register')">¿No tienes cuenta? Regístrate</div>
+  </div>
+
+  <!-- FORM REGISTER -->
+  <div id="registerForm" class="hidden">
+    <input type="text" id="regUser" placeholder="Nuevo usuario">
+    <input type="password" id="regPass" placeholder="Nueva contraseña">
+    <button onclick="register()">Registrar</button>
+    <div class="switch" onclick="toggleForm('login')">Ya tengo cuenta, iniciar sesión</div>
+  </div>
+
+  <!-- PANEL LOGUEADO -->
+  <div id="loggedPanel" class="hidden">
+    <div class="msg ok" id="welcomeMsg"></div>
+    <button onclick="logout()">Cerrar sesión</button>
+  </div>
+
+  <div class="table-wrap">
+    <strong style="font-size:12px;">Usuarios registrados (memoria, se borra al recargar):</strong>
+    <table>
+      <thead><tr><th>Usuario</th><th>Contraseña</th></tr></thead>
+      <tbody id="userTableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  // "Base de datos" en memoria: simple array de objetos
+  // (se pierde al recargar la página, no persiste en disco)
+  let usuarios = [];
+
+  function toggleForm(target) {
+    document.getElementById('loginForm').classList.toggle('hidden', target !== 'login');
+    document.getElementById('registerForm').classList.toggle('hidden', target !== 'register');
+    document.getElementById('loggedPanel').classList.add('hidden');
+    setMsg('', '');
+  }
+
+  function setMsg(text, type) {
+    const msg = document.getElementById('msg');
+    msg.textContent = text;
+    msg.className = 'msg ' + (type || '');
+  }
+
+  function renderTable() {
+    const body = document.getElementById('userTableBody');
+    body.innerHTML = '';
+    usuarios.forEach(u => {
+      const row = document.createElement('tr');
+      row.innerHTML = `<td>${escapeHtml(u.usuario)}</td><td>${escapeHtml(u.pass)}</td>`;
+      body.appendChild(row);
+    });
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function register() {
+    const user = document.getElementById('regUser').value.trim();
+    const pass = document.getElementById('regPass').value.trim();
+
+    if (!user || !pass) {
+      setMsg('Completa usuario y contraseña', 'error');
+      return;
+    }
+    if (usuarios.some(u => u.usuario === user)) {
+      setMsg('Ese usuario ya existe', 'error');
+      return;
+    }
+    usuarios.push({ usuario: user, pass: pass });
+    renderTable();
+    setMsg('Usuario registrado con éxito. Ahora inicia sesión.', 'ok');
+    document.getElementById('regUser').value = '';
+    document.getElementById('regPass').value = '';
+    toggleForm('login');
+  }
+
+  function login() {
+    const user = document.getElementById('loginUser').value.trim();
+    const pass = document.getElementById('loginPass').value.trim();
+
+    const found = usuarios.find(u => u.usuario === user && u.pass === pass);
+    if (found) {
+      document.getElementById('loginForm').classList.add('hidden');
+      document.getElementById('registerForm').classList.add('hidden');
+      document.getElementById('loggedPanel').classList.remove('hidden');
+      document.getElementById('welcomeMsg').textContent = `Bienvenido, ${found.usuario} 👋`;
+      setMsg('', '');
+    } else {
+      setMsg('Usuario o contraseña incorrectos', 'error');
+    }
+  }
+
+  function logout() {
+    toggleForm('login');
+    document.getElementById('loginUser').value = '';
+    document.getElementById('loginPass').value = '';
+  }
+</script>
+
+</body>
+</html>
